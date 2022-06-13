@@ -1,0 +1,36 @@
+{
+  "name": "wedding-backend",
+  "version": "1.0.0",
+  "description": "a wedding/naming/house website",
+  "main": "index.js",
+  "author": "ademuyiwa adewuyi oladapo (aka codesader)",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.1",
+    "jsonwebtoken": "^8.5.1",
+    "pg": "^8.7.3"
+  },
+  "devDependencies": {
+    "dotenv": "^16.0.1",
+    "morgan": "^1.10.0",
+    "nodemon": "^2.0.16"
+  },
+  "prettier": {
+    "printWidth": 80,
+    "tabWidth": 4,
+    "singleQuote": false,
+    "trailingComma": "es5",
+    "bracketSpacing": true,
+    "jsxBracketSameLine": false,
+    "arrowParens": "avoid",
+    "requirePragma": false,
+    "insertPragma": false,
+    "proseWrap": "always",
+    "proseWrapColumn": 80,
+    "htmlWhitespaceSensitivity": "css"
+  }
+}
