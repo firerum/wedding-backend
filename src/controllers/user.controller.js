@@ -93,6 +93,7 @@ const login = async (req, res) => {
                 message: "email and password must not be empty"
             });
         }
+        // check if user exists
         const response = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
         if (response.rowCount < 1) {
             return res.status(404).json({
@@ -133,21 +134,25 @@ const update_user = async (req, res) => {
                 message: "fields cannot be empty"
             });
         }
+        // check if user exists
         const response = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
         if (response.rows < 1) {
             return res.status(404).json({
                 message: "User does not exist!"
             });
         }
-        const user = await pool.query("UPDATE users SET email = $1, first_name= $2 WHERE id = $3", [
+        // do the update if user exists
+        await pool.query("UPDATE users SET email = $1, first_name= $2 WHERE id = $3", [
             email,
             first_name,
             id
         ]);
+        // fetch the updated user
+        const updatedUser = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
         return res.status(200).json({
             success: true,
             message: "user updated successfully",
-            data: user.rows
+            data: updatedUser.rows
         });
     } catch (err) {
         res.status(500).json({
@@ -165,11 +170,13 @@ const delete_user = async (req, res) => {
     try {
         const { id } = req.params;
         const response = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+        // check if user exists
         if (response.rowCount < 1) {
             return res.status(404).json({
                 message: "User does not exist!"
             });
         }
+        // delete user if it exists
         await pool.query("DELETE FROM users WHERE id = $1", [id]);
         return res.status(204).json({
             success: true,
