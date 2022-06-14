@@ -93,10 +93,11 @@ const login = async (req, res) => {
                 message: "email and password must not be empty"
             });
         }
+        // check if user exists
         const response = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
         if (response.rowCount < 1) {
             return res.status(404).json({
-                message: "User not found!"
+                message: "User does not exist!"
             });
         }
         const [loggedInUser] = response.rows;
@@ -124,24 +125,62 @@ const login = async (req, res) => {
 //  @routes /api/v1/users/:id
 //  @access PUT request
 //  @desc update user details with a given id
-const update_user = (req, res) => {
-    res.status(200).json({
-        success: true,
-        message: "user updated successfully"
-    });
+const update_user = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { first_name, last_name, email, password } = req.body;
+        if (!first_name || !last_name || !email) {
+            return res.status(400).json({
+                message: "fields cannot be empty"
+            });
+        }
+        // check if user exists
+        const response = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+        if (response.rows < 1) {
+            return res.status(404).json({
+                message: "User does not exist!"
+            });
+        }
+        // do the update if user exists
+        await pool.query("UPDATE users SET email = $1, first_name= $2 WHERE id = $3", [
+            email,
+            first_name,
+            id
+        ]);
+        // fetch the updated user
+        const updatedUser = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+        return res.status(200).json({
+            success: true,
+            message: "user updated successfully",
+            data: updatedUser.rows
+        });
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: "server error",
+            error: err.message
+        });
+    }
 };
 
 //  @routes /api/v1/users/:id
 //  @access DELETE request
 //  @desc delete user with a given id
 const delete_user = async (req, res) => {
-    const { id } = req.params;
     try {
+        const { id } = req.params;
+        const response = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+        // check if user exists
+        if (response.rowCount < 1) {
+            return res.status(404).json({
+                message: "User does not exist!"
+            });
+        }
+        // delete user if it exists
         await pool.query("DELETE FROM users WHERE id = $1", [id]);
         return res.status(204).json({
             success: true,
-            message: "deleted successfully",
-            data: {}
+            message: "deleted successfully"
         });
     } catch (err) {
         res.status(500).json({

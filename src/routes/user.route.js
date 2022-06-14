@@ -18,8 +18,8 @@ router.post("/register", userController.register);
 
 router.post("/login", userController.login);
 
-router.put("/:id", userController.update_user);
+router.put("/:id", auth, userController.update_user);
 
-router.delete("/:id", userController.delete_user);
+router.delete("/:id", auth, userController.delete_user);
 
 module.exports = router;
