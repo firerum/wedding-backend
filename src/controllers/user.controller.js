@@ -67,7 +67,7 @@ const register = async (req, res) => {
             [first_name, last_name, email, password]
         );
         // create token
-        const token = createToken(req);
+        const token = createToken(req.body);
         return res.status(201).json({
             success: true,
             data: response.rows[0],
@@ -107,7 +107,7 @@ const login = async (req, res) => {
                 message: "Incorrect password"
             });
         }
-        const token = createToken(req);
+        const token = createToken(req.body);
         return res.status(200).json({
             success: true,
             data: response.rows,

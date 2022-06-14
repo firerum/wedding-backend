@@ -1,6 +1,7 @@
 const express = require("express");
 const morgan = require("morgan");
 const user = require("./src/routes/user.route");
+const event = require("./src/routes/event.route");
 
 // initialize express
 const app = express();
@@ -14,6 +15,7 @@ app.use(express.urlencoded({ extended: false })); // for parsing application/x-w
 app.use(express.json()); // for parsing application/json
 
 app.use("/api/v1/users", user);
+app.use("/api/v1/events", event);
 
 app.use((req, res) => {
     res.status(404).json({
