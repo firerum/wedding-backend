@@ -5,9 +5,8 @@ const pool = require("../configs/db.config");
 //  @desc retrieve all events
 const get_all_events = async (req, res) => {
     try {
-        const response = await pool.query(
-            "SELECT * FROM events LEFT JOIN users ON events.user_email = users.email"
-        );
+        const { email } = req.user;
+        const response = await pool.query("SELECT * FROM events WHERE user_email = $1", [email]);
         return res.status(200).json({
             success: true,
             data: response.rows
@@ -27,7 +26,11 @@ const get_all_events = async (req, res) => {
 const get_single_event = async (req, res) => {
     try {
         const { id } = req.params;
-        const response = await pool.query("SELECT * FROM events WHERE id = $1", [id]);
+        const { email } = req.user;
+        const response = await pool.query(
+            "SELECT * FROM events WHERE id = $1 AND user_email = $2",
+            [id, email]
+        );
         if (response.rowCount < 1) {
             return res.status(404).json({
                 message: "event not found!"
@@ -84,6 +87,7 @@ const new_event = async (req, res) => {
 const update_event = async (req, res) => {
     try {
         const { id } = req.params;
+        const { email } = req.user;
         const { name, venue, description, created_at } = req.body;
         if (!name || !venue || !description) {
             return res.status(400).json({
@@ -92,18 +96,23 @@ const update_event = async (req, res) => {
         }
         // check if event exists
         const response = await pool.query("SELECT * FROM events WHERE id = $1", [id]);
+        const [event] = response.rows;
         if (response.rows < 1) {
             return res.status(404).json({
                 message: "Event does not exist!"
             });
         }
+        // check if loggedIn user matches the event creator
+        if (email !== event.user_email) {
+            return res.status(401).json({
+                message: "Unauthorized access!"
+            });
+        }
         // do the update if event exists
-        await pool.query("UPDATE events SET name = $1, venue = $2, description = $3 WHERE id = $4", [
-            name,
-            venue,
-            description,
-            id
-        ]);
+        await pool.query(
+            "UPDATE events SET name = $1, venue = $2, description = $3, created_at = $4 WHERE id = $5",
+            [name, venue, description, created_at, id]
+        );
         // fetch the updated user
         const updatedEvent = await pool.query("SELECT * FROM events WHERE id = $1", [id]);
         return res.status(200).json({
@@ -126,11 +135,19 @@ const update_event = async (req, res) => {
 const delete_event = async (req, res) => {
     try {
         const { id } = req.params;
+        const { email } = req.user;
         const response = await pool.query("SELECT * FROM events WHERE id = $1", [id]);
+        const [event] = response.rows;
         // check if event exists
         if (response.rowCount < 1) {
             return res.status(404).json({
                 message: "event does not exist!"
+            });
+        }
+        // check if loggedIn user matches the event creator hence can delete
+        if (email !== event.user_email) {
+            return res.status(401).json({
+                message: "Unauthorized access!"
             });
         }
         // delete event if it exists

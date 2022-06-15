@@ -1,6 +1,6 @@
 const pool = require("../configs/db.config");
 const bcrypt = require("bcryptjs");
-const createToken = require("../utils/createToken");
+const createToken = require("../middlewares/createToken");
 
 //  @routes /api/v1/users
 //  @access GET request
@@ -54,7 +54,7 @@ const register = async (req, res) => {
         let { first_name, last_name, email, password } = req.body;
         // check if user already exists
         const isExisting = await pool.query("SELECT email FROM users WHERE email = $1", [email]);
-        if (isExisting.rowCount >= 1) {
+        if (isExisting.rowCount > 0) {
             return res.status(409).json({
                 message: "User already exists. Please login"
             });

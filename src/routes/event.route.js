@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const eventController = require("../controllers/event.controller");
-const auth = require("../utils/verifyToken");
+const auth = require("../middlewares/verifyToken");
 
-router.get("/", eventController.get_all_events);
+router.get("/", auth, eventController.get_all_events);
 
-router.get("/:id", eventController.get_single_event);
+router.get("/:id", auth, eventController.get_single_event);
 
 router.post("/", auth, eventController.new_event);
 
