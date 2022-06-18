@@ -2,6 +2,7 @@ const pool = require("../configs/db.config");
 const bcrypt = require("bcryptjs");
 const createToken = require("../middlewares/createToken");
 const { validateRegister, validateLogin } = require("../utils/validators");
+const { number } = require("joi");
 
 //  @routes /api/v1/users
 //  @access GET request
@@ -23,7 +24,7 @@ const get_all_users = async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({
-            status: "error",
+            status: "failed",
             message: "Server error",
             error: err.message
         });
@@ -48,10 +49,10 @@ const get_single_user = async (req, res) => {
             data: response.rows
         });
     } catch (err) {
-        res.status(200).json({
-            status: "error",
+        res.status(500).json({
+            status: "failed",
             message: "Server error",
-            data: err.message
+            error: err.message
         });
     }
 };
@@ -94,7 +95,7 @@ const register = async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({
-            status: "error",
+            status: "failed",
             message: "Server error",
             error: err.message
         });
@@ -109,9 +110,9 @@ const login = async (req, res) => {
         const { error, value } = validateLogin(req.body);
         if (error) {
             return res.status(400).json({
-                status: "error",
+                status: "failed",
                 message: "Invalid request data",
-                message: error.message
+                error: error.message
             });
         }
         const { email, password } = value;
@@ -138,7 +139,7 @@ const login = async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({
-            status: "error",
+            status: "failed",
             message: "Server error",
             error: err.message
         });
@@ -155,9 +156,9 @@ const update_user = async (req, res) => {
         const { error, value } = validateRegister(req.body);
         if (error) {
             return res.status(400).json({
-                status: "error",
+                status: "failed",
                 message: "Invalid request data",
-                message: error.message
+                error: error.message
             });
         }
         let { first_name, last_name, email, password, modified = new Date() } = value;
@@ -190,7 +191,7 @@ const update_user = async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({
-            status: "error",
+            status: "failed",
             message: "Server error",
             error: err.message
         });
@@ -219,7 +220,7 @@ const delete_user = async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({
-            status: "error",
+            status: "failed",
             message: "Server error",
             error: err.message
         });
