@@ -1,4 +1,5 @@
 const pool = require("../configs/db.config");
+const { validateNewEvent } = require("../utils/validators");
 
 //  @routes /api/v1/events
 //  @access GET request
@@ -8,13 +9,13 @@ const get_all_events = async (req, res) => {
         const { email } = req.user;
         const response = await pool.query("SELECT * FROM events WHERE user_email = $1", [email]);
         return res.status(200).json({
-            success: true,
+            status: "success",
             data: response.rows
         });
     } catch (err) {
         res.status(500).json({
-            success: false,
-            message: "server error",
+            status: "error",
+            message: "Server error",
             error: err.message
         });
     }
@@ -37,14 +38,14 @@ const get_single_event = async (req, res) => {
             });
         }
         return res.status(200).json({
-            success: true,
+            status: "success",
             data: response.rows
         });
     } catch (err) {
-        res.status(200).json({
-            success: false,
-            message: "server error",
-            data: err.message
+        res.status(500).json({
+            status: "error",
+            message: "Server error",
+            error: err.message
         });
     }
 };
@@ -68,15 +69,15 @@ const new_event = async (req, res) => {
         );
         const response = await pool.query("SELECT * FROM events WHERE name = $1", [name]);
         return res.status(200).json({
-            success: true,
-            message: "event created successfully",
+            status: "success",
+            message: "Event created successfully",
             data: response.rows
         });
     } catch (err) {
         res.status(500).json({
-            success: false,
-            message: "server error",
-            data: err.message
+            status: "error",
+            message: "Server error",
+            error: err.message
         });
     }
 };
@@ -116,14 +117,14 @@ const update_event = async (req, res) => {
         // fetch the updated user
         const updatedEvent = await pool.query("SELECT * FROM events WHERE id = $1", [id]);
         return res.status(200).json({
-            success: true,
+            status: "success",
             message: "Event updated successfully",
             data: updatedEvent.rows
         });
     } catch (err) {
         res.status(500).json({
-            success: false,
-            message: "server error",
+            status: "error",
+            message: "Server error",
             error: err.message
         });
     }
@@ -141,7 +142,7 @@ const delete_event = async (req, res) => {
         // check if event exists
         if (response.rowCount < 1) {
             return res.status(404).json({
-                message: "event does not exist!"
+                message: "Event does not exist!"
             });
         }
         // check if loggedIn user matches the event creator hence can delete
@@ -153,13 +154,13 @@ const delete_event = async (req, res) => {
         // delete event if it exists
         await pool.query("DELETE FROM events WHERE id = $1", [id]);
         return res.status(200).json({
-            success: true,
-            message: "deleted successfully"
+            status: "success",
+            message: "Event Deleted successfully"
         });
     } catch (err) {
         res.status(500).json({
-            success: false,
-            message: "server error",
+            status: "error",
+            message: "Server error",
             error: err.message
         });
     }

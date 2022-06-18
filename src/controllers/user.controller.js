@@ -1,6 +1,7 @@
 const pool = require("../configs/db.config");
 const bcrypt = require("bcryptjs");
 const createToken = require("../middlewares/createToken");
+const { validateRegister, validateLogin } = require("../utils/validators");
 
 //  @routes /api/v1/users
 //  @access GET request
@@ -9,13 +10,21 @@ const get_all_users = async (req, res) => {
     try {
         const response = await pool.query("SELECT * FROM users ORDER BY id");
         return res.status(200).json({
-            success: true,
-            data: response.rows
+            status: "success",
+            data: response.rows,
+            links: {
+                hub: {
+                    href: "https://wedding-app.com/hub"
+                }
+            },
+            guides: {
+                href: "https://wedding-app.com/guides"
+            }
         });
     } catch (err) {
         res.status(500).json({
-            success: false,
-            message: "server error",
+            status: "error",
+            message: "Server error",
             error: err.message
         });
     }
@@ -30,17 +39,18 @@ const get_single_user = async (req, res) => {
         const response = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
         if (response.rowCount < 1) {
             return res.status(404).json({
-                message: "user not found!"
+                status: "success",
+                message: "User does not exist!"
             });
         }
         return res.status(200).json({
-            success: true,
+            status: "success",
             data: response.rows
         });
     } catch (err) {
         res.status(200).json({
-            success: false,
-            message: "server error",
+            status: "error",
+            message: "Server error",
             data: err.message
         });
     }
@@ -51,7 +61,15 @@ const get_single_user = async (req, res) => {
 //  @desc register user
 const register = async (req, res) => {
     try {
-        let { first_name, last_name, email, password } = req.body;
+        // validate user input
+        const { error, value } = validateRegister(req.body);
+        if (error) {
+            return res.status(400).json({
+                message: "Invalid request data",
+                error: error.message
+            });
+        }
+        let { first_name, last_name, email, password, created_at = new Date() } = value;
         // check if user already exists
         const isExisting = await pool.query("SELECT email FROM users WHERE email = $1", [email]);
         if (isExisting.rowCount > 0) {
@@ -62,21 +80,22 @@ const register = async (req, res) => {
         // encrypt the user password before save
         const encryptedPassword = await bcrypt.hash(password, 10);
         password = encryptedPassword;
-        const response = await pool.query(
-            "INSERT INTO users(first_name, last_name, email, password) VALUES($1, $2, $3, $4)",
-            [first_name, last_name, email, password]
+        await pool.query(
+            "INSERT INTO users(first_name, last_name, email, password, created_at) VALUES($1, $2, $3, $4, $5)",
+            [first_name, last_name, email, password, created_at]
         );
+        const response = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
         // create token
-        const token = createToken(req.body);
+        const token = createToken(value);
         return res.status(201).json({
-            success: true,
+            status: "success",
             data: response.rows[0],
             token
         });
     } catch (err) {
         res.status(500).json({
-            success: false,
-            message: "server error",
+            status: "error",
+            message: "Server error",
             error: err.message
         });
     }
@@ -87,16 +106,20 @@ const register = async (req, res) => {
 //  @desc log in a user
 const login = async (req, res) => {
     try {
-        const { email, password } = req.body;
-        if (!email || !password) {
-            res.status(400).json({
-                message: "email and password must not be empty"
+        const { error, value } = validateLogin(req.body);
+        if (error) {
+            return res.status(400).json({
+                status: "error",
+                message: "Invalid request data",
+                message: error.message
             });
         }
+        const { email, password } = value;
         // check if user exists
         const response = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
         if (response.rowCount < 1) {
             return res.status(404).json({
+                status: "success",
                 message: "User does not exist!"
             });
         }
@@ -104,19 +127,19 @@ const login = async (req, res) => {
         const result = await bcrypt.compare(password, loggedInUser.password);
         if (!result) {
             return res.status(400).json({
-                message: "Incorrect password"
+                message: "Incorrect password or email"
             });
         }
-        const token = createToken(req.body);
+        const token = createToken(value);
         return res.status(200).json({
-            success: true,
+            status: "success",
             data: response.rows,
             token
         });
     } catch (err) {
         res.status(500).json({
-            success: false,
-            message: "server error",
+            status: "error",
+            message: "Server error",
             error: err.message
         });
     }
@@ -128,36 +151,47 @@ const login = async (req, res) => {
 const update_user = async (req, res) => {
     try {
         const { id } = req.params;
-        const { first_name, last_name, email, password } = req.body;
-        if (!first_name || !last_name || !email) {
+        const { user } = req;
+        const { error, value } = validateRegister(req.body);
+        if (error) {
             return res.status(400).json({
-                message: "fields cannot be empty"
+                status: "error",
+                message: "Invalid request data",
+                message: error.message
+            });
+        }
+        let { first_name, last_name, email, password, modified = new Date() } = value;
+
+        // ensure only the right user can make updates
+        if (email !== user.email) {
+            return res.status(401).json({
+                message: "Unauthorized access!"
             });
         }
         // check if user exists
         const response = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
         if (response.rows < 1) {
             return res.status(404).json({
+                status: "success",
                 message: "User does not exist!"
             });
         }
         // do the update if user exists
-        await pool.query("UPDATE users SET email = $1, first_name= $2 WHERE id = $3", [
-            email,
-            first_name,
-            id
-        ]);
+        await pool.query(
+            "UPDATE users SET email = $1, first_name= $2, last_name = $3, modified = $4 WHERE id = $5",
+            [email, first_name, last_name, modified, id]
+        );
         // fetch the updated user
         const updatedUser = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
         return res.status(200).json({
-            success: true,
-            message: "user updated successfully",
+            status: "success",
+            message: "User updated successfully",
             data: updatedUser.rows
         });
     } catch (err) {
         res.status(500).json({
-            success: false,
-            message: "server error",
+            status: "error",
+            message: "Server error",
             error: err.message
         });
     }
@@ -173,19 +207,20 @@ const delete_user = async (req, res) => {
         // check if user exists
         if (response.rowCount < 1) {
             return res.status(404).json({
+                status: "success",
                 message: "User does not exist!"
             });
         }
         // delete user if it exists
         await pool.query("DELETE FROM users WHERE id = $1", [id]);
         return res.status(204).json({
-            success: true,
-            message: "deleted successfully"
+            status: "success",
+            message: "User deleted successfully"
         });
     } catch (err) {
         res.status(500).json({
-            success: false,
-            message: "server error",
+            status: "error",
+            message: "Server error",
             error: err.message
         });
     }
