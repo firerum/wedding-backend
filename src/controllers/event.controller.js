@@ -14,7 +14,7 @@ const get_all_events = async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({
-            status: "error",
+            status: "failed",
             message: "Server error",
             error: err.message
         });
@@ -34,7 +34,7 @@ const get_single_event = async (req, res) => {
         );
         if (response.rowCount < 1) {
             return res.status(404).json({
-                message: "event not found!"
+                message: "Event does not exist!"
             });
         }
         return res.status(200).json({
@@ -43,7 +43,7 @@ const get_single_event = async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({
-            status: "error",
+            status: "failed",
             message: "Server error",
             error: err.message
         });
@@ -75,7 +75,7 @@ const new_event = async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({
-            status: "error",
+            status: "failed",
             message: "Server error",
             error: err.message
         });
@@ -123,7 +123,7 @@ const update_event = async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({
-            status: "error",
+            status: "failed",
             message: "Server error",
             error: err.message
         });
@@ -159,7 +159,7 @@ const delete_event = async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({
-            status: "error",
+            status: "failed",
             message: "Server error",
             error: err.message
         });
