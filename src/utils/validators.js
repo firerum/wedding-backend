@@ -6,8 +6,9 @@ const validateRegister = (body) => {
         first_name: Joi.string().lowercase().trim().min(3).required(),
         last_name: Joi.string().lowercase().min(3).trim().required(),
         email: Joi.string().lowercase().email().min(3).trim().required(),
-        password: Joi.string().min(6).required()
-        // created_at: Joi.date().default(Date.now)
+        password: Joi.string().min(6).required(),
+        created_at: Joi.date().timestamp().default(new Date()),
+        modified: Joi.date().timestamp()
     });
     return schema.validate(body);
 };
@@ -31,7 +32,8 @@ const validateNewEvent = (body) => {
             .required(),
         venue: Joi.string().lowercase().required(),
         description: Joi.string().lowercase(),
-        created_at: Joi.date().default(Date.now)
+        created_at: Joi.date().timestamp().default(new Date()),
+        modified: Joi.date().timestamp()
     });
     return schema.validate(body);
 };

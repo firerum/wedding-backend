@@ -69,7 +69,7 @@ const register = async (req, res) => {
                 error: error.message
             });
         }
-        let { first_name, last_name, email, password, created_at = new Date() } = value;
+        let { first_name, last_name, email, password, created_at } = value;
         // check if user already exists
         const isExisting = await pool.query("SELECT email FROM users WHERE email = $1", [email]);
         if (isExisting.rowCount > 0) {
