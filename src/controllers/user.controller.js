@@ -1,7 +1,7 @@
 const pool = require("../configs/db.config");
 const bcrypt = require("bcryptjs");
 const createToken = require("../middlewares/createToken");
-const { validateRegister, validateLogin } = require("../utils/validators");
+const { validateRegister, validateLogin, validateUpdateUser } = require("../utils/validators");
 const { number } = require("joi");
 
 //  @routes /api/v1/users
@@ -62,7 +62,6 @@ const get_single_user = async (req, res) => {
 //  @desc register user
 const register = async (req, res) => {
     try {
-        // validate user input
         const { error, value } = validateRegister(req.body);
         if (error) {
             return res.status(400).json({
@@ -71,7 +70,6 @@ const register = async (req, res) => {
             });
         }
         let { first_name, last_name, email, password, created_at } = value;
-        // check if user already exists
         const isExisting = await pool.query("SELECT email FROM users WHERE email = $1", [email]);
         if (isExisting.rowCount > 0) {
             return res.status(409).json({
@@ -86,8 +84,8 @@ const register = async (req, res) => {
             [first_name, last_name, email, password, created_at]
         );
         const response = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-        // create token
-        const token = createToken(value);
+        const [user] = response.rows;
+        const token = createToken(user);
         return res.status(201).json({
             status: "success",
             data: response.rows[0],
@@ -124,14 +122,14 @@ const login = async (req, res) => {
                 message: "User does not exist!"
             });
         }
-        const [loggedInUser] = response.rows;
-        const result = await bcrypt.compare(password, loggedInUser.password);
+        const [user] = response.rows;
+        const result = await bcrypt.compare(password, user.password);
         if (!result) {
             return res.status(400).json({
                 message: "Incorrect password or email"
             });
         }
-        const token = createToken(value);
+        const token = createToken(user);
         return res.status(200).json({
             status: "success",
             data: response.rows,
@@ -153,7 +151,7 @@ const update_user = async (req, res) => {
     try {
         const { id } = req.params;
         const { user } = req;
-        const { error, value } = validateRegister(req.body);
+        const { error, value } = validateUpdateUser(req.body);
         if (error) {
             return res.status(400).json({
                 status: "failed",
@@ -161,12 +159,20 @@ const update_user = async (req, res) => {
                 error: error.message
             });
         }
-        let { first_name, last_name, email, password, modified = new Date() } = value;
+        let {
+            first_name,
+            last_name,
+            email,
+            password,
+            phone_no,
+            country,
+            modified = new Date()
+        } = value;
 
         // ensure only the right user can make updates
-        if (email !== user.email) {
+        if (id !== user.id) {
             return res.status(401).json({
-                message: "Unauthorized access!"
+                message: "Access denied! Unauthorized access!"
             });
         }
         // check if user exists
@@ -179,10 +185,9 @@ const update_user = async (req, res) => {
         }
         // do the update if user exists
         await pool.query(
-            "UPDATE users SET email = $1, first_name= $2, last_name = $3, modified = $4 WHERE id = $5",
-            [email, first_name, last_name, modified, id]
+            "UPDATE users SET email = $1, first_name= $2, last_name = $3, modified = $4, phone_no = $5, country = $6 WHERE id = $7",
+            [email, first_name, last_name, modified, phone_no, country, id]
         );
-        // fetch the updated user
         const updatedUser = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
         return res.status(200).json({
             status: "success",
@@ -205,14 +210,12 @@ const delete_user = async (req, res) => {
     try {
         const { id } = req.params;
         const response = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
-        // check if user exists
         if (response.rowCount < 1) {
             return res.status(404).json({
                 status: "success",
                 message: "User does not exist!"
             });
         }
-        // delete user if it exists
         await pool.query("DELETE FROM users WHERE id = $1", [id]);
         return res.status(204).json({
             status: "success",

@@ -22,6 +22,21 @@ const validateLogin = (body) => {
     return schema.validate(body);
 };
 
+// update user schema
+const validateUpdateUser = (body) => {
+    const schema = Joi.object({
+        first_name: Joi.string().lowercase().trim().min(3),
+        last_name: Joi.string().lowercase().min(3).trim(),
+        email: Joi.string().lowercase().email().min(3).trim(),
+        password: Joi.string().min(6),
+        phone_no: Joi.number(),
+        avatar: Joi.string(),
+        country: Joi.string(),
+        modified: Joi.date().timestamp()
+    });
+    return schema.validate(body);
+};
+
 // event validation
 const validateNewEvent = (body) => {
     const schema = Joi.object({
@@ -41,5 +56,6 @@ const validateNewEvent = (body) => {
 module.exports = {
     validateRegister,
     validateLogin,
+    validateUpdateUser,
     validateNewEvent
 };

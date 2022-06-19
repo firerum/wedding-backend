@@ -55,14 +55,15 @@ const get_single_event = async (req, res) => {
 //  @desc create new event
 const new_event = async (req, res) => {
     try {
-        const { name, venue, description, created_at } = req.body;
-        if (!name || !venue || !description) {
+        const { user } = req;
+        const { error, value } = validateNewEvent(req.body);
+        if (error) {
             return res.status(400).json({
-                message: "fields must not be empty"
+                message: "Invalid request data",
+                error: error.message
             });
         }
-        // get the signed in user from the request object passed down by the next function
-        const { user } = req;
+        const { name, venue, description, created_at } = value;
         await pool.query(
             "INSERT INTO events(name, venue, description, user_email) VALUES($1, $2, $3, $4)",
             [name, venue, description, user.email]
