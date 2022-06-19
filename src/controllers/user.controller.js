@@ -209,6 +209,7 @@ const update_user = async (req, res) => {
 const delete_user = async (req, res) => {
     try {
         const { id } = req.params;
+        const { user } = req;
         const response = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
         if (response.rowCount < 1) {
             return res.status(404).json({
@@ -216,8 +217,13 @@ const delete_user = async (req, res) => {
                 message: "User does not exist!"
             });
         }
+        if (id !== user.id) {
+            return res.status(401).json({
+                message: "Access denied! Unauthorized access!"
+            });
+        }
         await pool.query("DELETE FROM users WHERE id = $1", [id]);
-        return res.status(204).json({
+        return res.status(200).json({
             status: "success",
             message: "User deleted successfully"
         });
