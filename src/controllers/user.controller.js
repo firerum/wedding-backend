@@ -159,16 +159,6 @@ const update_user = async (req, res) => {
                 error: error.message
             });
         }
-        let {
-            first_name,
-            last_name,
-            email,
-            password,
-            phone_no,
-            country,
-            modified = new Date()
-        } = value;
-
         // ensure only the right user can make updates
         if (id !== user.id) {
             return res.status(401).json({
@@ -177,12 +167,23 @@ const update_user = async (req, res) => {
         }
         // check if user exists
         const response = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+        const [u] = response.rows;
         if (response.rows < 1) {
             return res.status(404).json({
                 status: "success",
                 message: "User does not exist!"
             });
         }
+        let {
+            first_name = u.first_name,
+            last_name = u.last_name,
+            email = u.email,
+            password,
+            phone_no,
+            country,
+            modified = new Date()
+        } = value;
+
         // do the update if user exists
         await pool.query(
             "UPDATE users SET email = $1, first_name= $2, last_name = $3, modified = $4, phone_no = $5, country = $6 WHERE id = $7",
@@ -210,16 +211,16 @@ const delete_user = async (req, res) => {
     try {
         const { id } = req.params;
         const { user } = req;
+        if (id !== user.id) {
+            return res.status(401).json({
+                message: "Access denied! Unauthorized access!"
+            });
+        }
         const response = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
         if (response.rowCount < 1) {
             return res.status(404).json({
                 status: "success",
                 message: "User does not exist!"
-            });
-        }
-        if (id !== user.id) {
-            return res.status(401).json({
-                message: "Access denied! Unauthorized access!"
             });
         }
         await pool.query("DELETE FROM users WHERE id = $1", [id]);
