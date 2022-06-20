@@ -1,5 +1,5 @@
 const pool = require("../configs/db.config");
-const { validateNewEvent } = require("../utils/validators");
+const { validateNewEvent, validateUpdateEvent } = require("../utils/validators");
 
 //  @routes /api/v1/events
 //  @access GET request
@@ -63,10 +63,10 @@ const new_event = async (req, res) => {
                 error: error.message
             });
         }
-        const { name, venue, description, created_at } = value;
+        const { name, venue, description, date_of_event, category, created_at } = value;
         await pool.query(
-            "INSERT INTO events(name, venue, description, user_email) VALUES($1, $2, $3, $4)",
-            [name, venue, description, user.email]
+            "INSERT INTO events(name, venue, description, category, created_at, date_of_event, user_email) VALUES($1, $2, $3, $4, $5, $6, $7)",
+            [name, venue, description, category, created_at, date_of_event, user.email]
         );
         const response = await pool.query("SELECT * FROM events WHERE name = $1", [name]);
         return res.status(200).json({
@@ -90,10 +90,11 @@ const update_event = async (req, res) => {
     try {
         const { id } = req.params;
         const { email } = req.user;
-        const { name, venue, description, created_at } = req.body;
-        if (!name || !venue || !description) {
+        const { error, value } = validateUpdateEvent(req.body);
+        if (error) {
             return res.status(400).json({
-                message: "fields cannot be empty"
+                message: "Invalid request data",
+                error: error.message
             });
         }
         // check if event exists
@@ -104,16 +105,23 @@ const update_event = async (req, res) => {
                 message: "Event does not exist!"
             });
         }
-        // check if loggedIn user matches the event creator
+        // ensure only the right user can make updates
         if (email !== event.user_email) {
             return res.status(401).json({
-                message: "Unauthorized access!"
+                message: "Access denied! Unauthorized access!"
             });
         }
-        // do the update if event exists
+        const {
+            name = event.name,
+            venue = event.venue,
+            description = event.description,
+            category = event.category,
+            modified,
+            date_of_event = event.date_of_event
+        } = value;
         await pool.query(
-            "UPDATE events SET name = $1, venue = $2, description = $3, created_at = $4 WHERE id = $5",
-            [name, venue, description, created_at, id]
+            "UPDATE events SET name = $1, venue = $2, description = $3, modified = $4, category = $5, date_of_event = $6 WHERE id = $7",
+            [name, venue, description, modified, category, date_of_event, id]
         );
         // fetch the updated user
         const updatedEvent = await pool.query("SELECT * FROM events WHERE id = $1", [id]);
@@ -149,10 +157,9 @@ const delete_event = async (req, res) => {
         // check if loggedIn user matches the event creator hence can delete
         if (email !== event.user_email) {
             return res.status(401).json({
-                message: "Unauthorized access!"
+                message: "Access denied! Unauthorized access!"
             });
         }
-        // delete event if it exists
         await pool.query("DELETE FROM events WHERE id = $1", [id]);
         return res.status(200).json({
             status: "success",

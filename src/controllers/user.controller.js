@@ -2,7 +2,6 @@ const pool = require("../configs/db.config");
 const bcrypt = require("bcryptjs");
 const createToken = require("../middlewares/createToken");
 const { validateRegister, validateLogin, validateUpdateUser } = require("../utils/validators");
-const { number } = require("joi");
 
 //  @routes /api/v1/users
 //  @access GET request
