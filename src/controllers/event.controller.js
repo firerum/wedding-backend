@@ -64,6 +64,13 @@ const new_event = async (req, res) => {
             });
         }
         const { name, venue, description, date_of_event, category, created_at } = value;
+        const isExisting = await pool.query("SELECT * FROM events WHERE name = $1", [name]);
+        if (isExisting.rowCount > 0) {
+            return res.status(409).json({
+                status: "failed",
+                message: "Event already exists"
+            });
+        }
         await pool.query(
             "INSERT INTO events(name, venue, description, category, created_at, date_of_event, user_email) VALUES($1, $2, $3, $4, $5, $6, $7)",
             [name, venue, description, category, created_at, date_of_event, user.email]
@@ -100,7 +107,7 @@ const update_event = async (req, res) => {
         // check if event exists
         const response = await pool.query("SELECT * FROM events WHERE id = $1", [id]);
         const [event] = response.rows;
-        if (response.rows < 1) {
+        if (response.rowCount < 1) {
             return res.status(404).json({
                 message: "Event does not exist!"
             });

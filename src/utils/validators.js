@@ -7,6 +7,7 @@ const validateRegister = (body) => {
         last_name: Joi.string().lowercase().min(3).trim().required(),
         email: Joi.string().lowercase().email().min(3).trim().required(),
         password: Joi.string().min(6).required(),
+        confirm_password: Joi.string().min(6).required(),
         created_at: Joi.date().timestamp().default(new Date())
     });
     return schema.validate(body);
@@ -41,7 +42,7 @@ const validateNewEvent = (body) => {
     const schema = Joi.object({
         name: Joi.string().lowercase().required(),
         category: Joi.string()
-            .valid("wedding", "birthday", "funeral", "naming")
+            .valid("wedding", "birthday", "christening", "others")
             .lowercase()
             .required(),
         venue: Joi.string().lowercase().required(),
@@ -56,9 +57,7 @@ const validateNewEvent = (body) => {
 const validateUpdateEvent = (body) => {
     const schema = Joi.object({
         name: Joi.string().lowercase(),
-        category: Joi.string()
-            .valid("wedding", "birthday", "funeral", "naming", "others")
-            .lowercase(),
+        category: Joi.string().valid("wedding", "birthday", "christening", "others").lowercase(),
         venue: Joi.string().lowercase(),
         date_of_event: Joi.date(),
         description: Joi.string().lowercase(),

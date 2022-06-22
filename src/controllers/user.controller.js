@@ -72,6 +72,7 @@ const register = async (req, res) => {
         const isExisting = await pool.query("SELECT email FROM users WHERE email = $1", [email]);
         if (isExisting.rowCount > 0) {
             return res.status(409).json({
+                status: "failed",
                 message: "User already exists. Please login"
             });
         }
