@@ -16,7 +16,7 @@ const verifyToken = (req, res, next) => {
             return res.status(403).json({
                 status: "failed",
                 message: "token error",
-                error: err.message
+                error: err
             });
         }
         req.user = user;

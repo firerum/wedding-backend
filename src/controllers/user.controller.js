@@ -39,7 +39,7 @@ const get_single_user = async (req, res) => {
         const response = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
         if (response.rowCount < 1) {
             return res.status(404).json({
-                status: "success",
+                status: "failed",
                 message: "User does not exist!"
             });
         }
@@ -88,7 +88,7 @@ const register = async (req, res) => {
         const token = createToken(user);
         return res.status(201).json({
             status: "success",
-            data: response.rows[0],
+            data: response.rows,
             token
         });
     } catch (err) {
@@ -118,7 +118,7 @@ const login = async (req, res) => {
         const response = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
         if (response.rowCount < 1) {
             return res.status(404).json({
-                status: "success",
+                status: "failed",
                 message: "User does not exist!"
             });
         }
@@ -126,6 +126,7 @@ const login = async (req, res) => {
         const result = await bcrypt.compare(password, user.password);
         if (!result) {
             return res.status(400).json({
+                status: "failed",
                 message: "Incorrect password or email"
             });
         }
@@ -162,6 +163,7 @@ const update_user = async (req, res) => {
         // ensure only the right user can make updates
         if (id !== user.id) {
             return res.status(401).json({
+                status: "failed",
                 message: "Access denied! Unauthorized access!"
             });
         }
@@ -213,14 +215,8 @@ const delete_user = async (req, res) => {
         const { user } = req;
         if (id !== user.id) {
             return res.status(401).json({
+                status: "failed",
                 message: "Access denied! Unauthorized access!"
-            });
-        }
-        const response = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
-        if (response.rowCount < 1) {
-            return res.status(404).json({
-                status: "success",
-                message: "User does not exist!"
             });
         }
         await pool.query("DELETE FROM users WHERE id = $1", [id]);

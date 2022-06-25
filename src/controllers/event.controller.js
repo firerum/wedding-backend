@@ -24,7 +24,7 @@ const get_all_events = async (req, res) => {
 //  @routes /api/v1/events/:id
 //  @access GET request
 //  @desc retrieve single event with a given id
-const get_single_event = async (req, res) => {
+const get_single_event = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { email } = req.user;
@@ -76,7 +76,7 @@ const new_event = async (req, res) => {
             [name, venue, description, category, created_at, date_of_event, user.email]
         );
         const response = await pool.query("SELECT * FROM events WHERE name = $1", [name]);
-        return res.status(200).json({
+        return res.status(201).json({
             status: "success",
             message: "Event created successfully",
             data: response.rows
@@ -170,7 +170,7 @@ const delete_event = async (req, res) => {
         await pool.query("DELETE FROM events WHERE id = $1", [id]);
         return res.status(200).json({
             status: "success",
-            message: "Event Deleted successfully"
+            message: "Event deleted successfully"
         });
     } catch (err) {
         res.status(500).json({
