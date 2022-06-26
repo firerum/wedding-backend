@@ -1,7 +1,7 @@
 const request = require("supertest");
 const app = require("../app");
 const pool = require("../src/configs/db.config.js");
-const { data, headers, signIn, event, user, erase } = require("./seeds");
+const { data, signIn, event, user, erase } = require("./seeds");
 
 let token = "";
 

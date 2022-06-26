@@ -19,10 +19,6 @@ module.exports = {
         email: "julius@gmail.com",
         password: "123456"
     },
-    headers: {
-        Authorization:
-            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjU3IiwiZW1haWwiOiJtYW5lQGdtYWlsLmNvbSIsImlhdCI6MTY1NjA5MTgxNSwiZXhwIjoxNjU2MTc4MjE1fQ.cW9p6PEHmHMuQr3gCXq1A-BOJN_2CFMVc4taggWvyrQ"
-    },
     user: async () => {
         const response = await pool.query("SELECT * FROM users WHERE email = $1", [
             "mane@gmail.com"
