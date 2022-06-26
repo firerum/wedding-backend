@@ -21,6 +21,7 @@ describe("Test USERS routes", () => {
         const response = await request(app).get("/api/v1/users");
         expect(response.statusCode).toBe(200);
         expect(response.body.status).toEqual("success");
+        expect(response.body.data).toBeDefined();
         expect(Array.isArray(response.body.data)).toBeTruthy();
     });
 
