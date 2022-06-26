@@ -1,4 +1,3 @@
-const { JsonWebTokenError } = require("jsonwebtoken");
 const jwt = require("jsonwebtoken");
 
 const verifyToken = (req, res, next) => {
@@ -7,6 +6,7 @@ const verifyToken = (req, res, next) => {
 
     if (token === null || !token) {
         return res.status(401).json({
+            status: "failed",
             message: "token is missing"
         });
     }
@@ -14,8 +14,9 @@ const verifyToken = (req, res, next) => {
     jwt.verify(token, process.env.TOKEN_SECRET, (err, user) => {
         if (err) {
             return res.status(403).json({
-                message: "invalid token",
-                error: err.message
+                status: "failed",
+                message: "token error",
+                error: err
             });
         }
         req.user = user;
