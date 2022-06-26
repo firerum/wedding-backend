@@ -1,4 +1,5 @@
 const pool = require("../configs/db.config");
+const { validateNewEvent, validateUpdateEvent } = require("../utils/validators");
 
 //  @routes /api/v1/events
 //  @access GET request
@@ -8,13 +9,13 @@ const get_all_events = async (req, res) => {
         const { email } = req.user;
         const response = await pool.query("SELECT * FROM events WHERE user_email = $1", [email]);
         return res.status(200).json({
-            success: true,
+            status: "success",
             data: response.rows
         });
     } catch (err) {
         res.status(500).json({
-            success: false,
-            message: "server error",
+            status: "failed",
+            message: "Server error",
             error: err.message
         });
     }
@@ -23,7 +24,7 @@ const get_all_events = async (req, res) => {
 //  @routes /api/v1/events/:id
 //  @access GET request
 //  @desc retrieve single event with a given id
-const get_single_event = async (req, res) => {
+const get_single_event = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { email } = req.user;
@@ -33,18 +34,18 @@ const get_single_event = async (req, res) => {
         );
         if (response.rowCount < 1) {
             return res.status(404).json({
-                message: "event not found!"
+                message: "Event does not exist!"
             });
         }
         return res.status(200).json({
-            success: true,
+            status: "success",
             data: response.rows
         });
     } catch (err) {
-        res.status(200).json({
-            success: false,
-            message: "server error",
-            data: err.message
+        res.status(500).json({
+            status: "failed",
+            message: "Server error",
+            error: err.message
         });
     }
 };
@@ -54,29 +55,37 @@ const get_single_event = async (req, res) => {
 //  @desc create new event
 const new_event = async (req, res) => {
     try {
-        const { name, venue, description, created_at } = req.body;
-        if (!name || !venue || !description) {
+        const { user } = req;
+        const { error, value } = validateNewEvent(req.body);
+        if (error) {
             return res.status(400).json({
-                message: "fields must not be empty"
+                message: "Invalid request data",
+                error: error.message
             });
         }
-        // get the signed in user from the request object passed down by the next function
-        const { user } = req;
+        const { name, venue, description, date_of_event, category, created_at } = value;
+        const isExisting = await pool.query("SELECT * FROM events WHERE name = $1", [name]);
+        if (isExisting.rowCount > 0) {
+            return res.status(409).json({
+                status: "failed",
+                message: "Event already exists"
+            });
+        }
         await pool.query(
-            "INSERT INTO events(name, venue, description, user_email) VALUES($1, $2, $3, $4)",
-            [name, venue, description, user.email]
+            "INSERT INTO events(name, venue, description, category, created_at, date_of_event, user_email) VALUES($1, $2, $3, $4, $5, $6, $7)",
+            [name, venue, description, category, created_at, date_of_event, user.email]
         );
         const response = await pool.query("SELECT * FROM events WHERE name = $1", [name]);
-        return res.status(200).json({
-            success: true,
-            message: "event created successfully",
+        return res.status(201).json({
+            status: "success",
+            message: "Event created successfully",
             data: response.rows
         });
     } catch (err) {
         res.status(500).json({
-            success: false,
-            message: "server error",
-            data: err.message
+            status: "failed",
+            message: "Server error",
+            error: err.message
         });
     }
 };
@@ -88,42 +97,50 @@ const update_event = async (req, res) => {
     try {
         const { id } = req.params;
         const { email } = req.user;
-        const { name, venue, description, created_at } = req.body;
-        if (!name || !venue || !description) {
+        const { error, value } = validateUpdateEvent(req.body);
+        if (error) {
             return res.status(400).json({
-                message: "fields cannot be empty"
+                message: "Invalid request data",
+                error: error.message
             });
         }
         // check if event exists
         const response = await pool.query("SELECT * FROM events WHERE id = $1", [id]);
         const [event] = response.rows;
-        if (response.rows < 1) {
+        if (response.rowCount < 1) {
             return res.status(404).json({
                 message: "Event does not exist!"
             });
         }
-        // check if loggedIn user matches the event creator
+        // ensure only the right user can make updates
         if (email !== event.user_email) {
             return res.status(401).json({
-                message: "Unauthorized access!"
+                message: "Access denied! Unauthorized access!"
             });
         }
-        // do the update if event exists
+        const {
+            name = event.name,
+            venue = event.venue,
+            description = event.description,
+            category = event.category,
+            modified,
+            date_of_event = event.date_of_event
+        } = value;
         await pool.query(
-            "UPDATE events SET name = $1, venue = $2, description = $3, created_at = $4 WHERE id = $5",
-            [name, venue, description, created_at, id]
+            "UPDATE events SET name = $1, venue = $2, description = $3, modified = $4, category = $5, date_of_event = $6 WHERE id = $7",
+            [name, venue, description, modified, category, date_of_event, id]
         );
         // fetch the updated user
         const updatedEvent = await pool.query("SELECT * FROM events WHERE id = $1", [id]);
         return res.status(200).json({
-            success: true,
+            status: "success",
             message: "Event updated successfully",
             data: updatedEvent.rows
         });
     } catch (err) {
         res.status(500).json({
-            success: false,
-            message: "server error",
+            status: "failed",
+            message: "Server error",
             error: err.message
         });
     }
@@ -141,25 +158,24 @@ const delete_event = async (req, res) => {
         // check if event exists
         if (response.rowCount < 1) {
             return res.status(404).json({
-                message: "event does not exist!"
+                message: "Event does not exist!"
             });
         }
         // check if loggedIn user matches the event creator hence can delete
         if (email !== event.user_email) {
             return res.status(401).json({
-                message: "Unauthorized access!"
+                message: "Access denied! Unauthorized access!"
             });
         }
-        // delete event if it exists
         await pool.query("DELETE FROM events WHERE id = $1", [id]);
         return res.status(200).json({
-            success: true,
-            message: "deleted successfully"
+            status: "success",
+            message: "Event deleted successfully"
         });
     } catch (err) {
         res.status(500).json({
-            success: false,
-            message: "server error",
+            status: "failed",
+            message: "Server error",
             error: err.message
         });
     }
