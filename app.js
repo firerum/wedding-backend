@@ -5,7 +5,7 @@ const session = require("express-session");
 const user = require("./src/routes/user.route");
 const event = require("./src/routes/event.route");
 const auth = require("./src/routes/auth.route");
-const passportSetup = require("./src/middlewares/passport.google");
+const passportSetup = require("./src/middlewares/passport.strategy");
 const passport = require("passport");
 
 // initialize express

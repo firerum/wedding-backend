@@ -1,5 +1,6 @@
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth").OAuth2Strategy;
+const FacebookStrategy = require("passport-facebook").Strategy;
 const pool = require("../configs/db.config");
 
 const createUser = (body, done) => {
@@ -18,6 +19,7 @@ const createUser = (body, done) => {
     });
 };
 
+// google strategy
 passport.use(
     new GoogleStrategy(
         {
@@ -36,6 +38,22 @@ passport.use(
     )
 );
 
+
+//  facebook strategy
+passport.use(
+    new FacebookStrategy(
+        {
+            callbackURL: "/api/v1/auth/facebook/redirect",
+            clientID: process.env.FB_CLIENT_ID,
+            clientSecret: process.env.FB_CLIENT_SECRET
+        },
+        (accessToken, refreshToken, proile, done) => {
+            const body = {}
+        }
+    )
+);
+
+
 passport.serializeUser((user, done) => {
     done(null, user.id);
 });
@@ -50,3 +68,12 @@ passport.deserializeUser((id, done) => {
             done(error, null);
         });
 });
+
+/* module.exports = {
+    ensureAuthenticate: function(req, res, next) {
+       if(req.isAuthenticated()) {
+          return next();
+       }
+       res.redirect("/users/login");
+    }
+ }; */
