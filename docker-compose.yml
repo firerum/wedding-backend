@@ -14,6 +14,9 @@ services:
       - DB_HOST=db
       - DB_PORT=5432
       - DB_NAME=wedding
+      - CLIENT_SECRET=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
+      - CLIENT_ID=1000633676357-0jqei9of0r2pvhirhq30nuuvt1hm3d3j.apps.googleusercontent.com
+      - SESSION_SECRET=5c57c325dec056f977dbd09b7caa5a3db
     ports:
       - 5000:5000
 
