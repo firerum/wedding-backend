@@ -28,14 +28,16 @@ router.get("/:id/dashboard", authCheck, (req, res) => {
     });
 });
 
-router.get("/:id", userController.get_single_user);
+router.get("/:id", auth, userController.get_single_user);
 
 router.post("/register", userController.register);
 
 router.post("/login", userController.login);
 
+router.get("/logout", userController.logout);
+
 router.put("/:id", auth, userController.update_user);
 
-router.delete("/:id", auth, userController.delete_user);
+router.delete("/:id", userController.delete_user);
 
 module.exports = router;

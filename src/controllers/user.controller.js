@@ -86,6 +86,10 @@ const register = async (req, res) => {
         const response = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
         const [user] = response.rows;
         const token = createToken(user);
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production"
+        });
         return res.status(201).json({
             status: "success",
             data: response.rows,
@@ -131,6 +135,10 @@ const login = async (req, res) => {
             });
         }
         const token = createToken(user);
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production"
+        });
         return res.status(200).json({
             status: "success",
             data: response.rows,
@@ -143,6 +151,16 @@ const login = async (req, res) => {
             error: err.message
         });
     }
+};
+
+//  @routes /api/v1/users/logout
+//  @access GET request
+//  @desc log out a user
+const logout = async (req, res) => {
+    res.cookie("token", "", {
+        httpOnly: true,
+        expiresIn: new Date(0)
+    }).send();
 };
 
 //  @routes /api/v1/users/:id
@@ -238,6 +256,7 @@ module.exports = {
     get_single_user,
     register,
     login,
+    logout,
     update_user,
     delete_user
 };
